@@ -91,4 +91,56 @@ Opciones (MSS, \textit{window scale}, SACK, \textit{timestamp}) & Negociación d
 
 Independientemente del protocolo concreto, los elementos comunes de diseño incluyen: direccionamiento, establecimiento y liberación de la conexión, control de flujo mediante memorias intermedias (\textit{buffers}) dinámicas, y multiplexación/demultiplexación. El establecimiento de una conexión es particularmente delicado en redes donde los paquetes pueden perderse, duplicarse o retrasarse; la solución adoptada por TCP es el acuerdo en tres vías (\textit{three-way handshake}), que evita que segmentos duplicados de conexiones antiguas sean interpretados erróneamente como pertenecientes a una nueva conexión \cite{tanenbaum}.
 
+\section{Protocolos sin conexión: UDP}
+
+\subsection{Características principales}
+
+El \emph{User Datagram Protocol} (UDP, RFC~768) es un protocolo de transporte no orientado a conexión que constituye, en esencia, una extensión mínima de IP con capacidad de multiplexación por puertos \cite{fuoc}. Sus características esenciales son:
+
+\begin{itemize}
+    \item No existe fase de establecimiento de conexión, por lo que no introduce retardos adicionales (ejemplo típico: DNS).
+    \item No mantiene estado de la conexión en el sistema final.
+    \item Cabecera mínima de 8 bytes (puerto origen, puerto destino, longitud y \textit{checksum}), frente a los 20 bytes mínimos de TCP.
+    \item No hay confirmaciones (ACK), ni control de flujo, ni control de congestión: cada datagrama se trata de forma independiente.
+    \item Ofrece únicamente detección de errores mediante suma de comprobación (opcional); si se detecta un error, el datagrama se descarta sin notificar al emisor.
+\end{itemize}
+
+La ausencia de estos mecanismos traslada toda la responsabilidad de fiabilidad, orden y control de duplicados a la aplicación. Esto resulta ventajoso en aplicaciones de tiempo real —telefonía IP, videoconferencia, monitoreo de señales— donde un dato retrasado es peor que un dato perdido, ya que introducir retransmisiones generaría \textit{jitter} inaceptable \cite{fuoc}.
+
+\begin{table}[htbp]
+\caption{Comparación entre UDP y TCP}
+\label{tab:comparacion}
+\centering
+\begin{tabular}{|p{1.6cm}|p{2.7cm}|p{2.7cm}|}
+\hline
+\textbf{Aspecto} & \textbf{UDP} & \textbf{TCP} \\
+\hline
+Conexión & No orientado & Orientado (3-way handshake) \\
+\hline
+Fiabilidad & No garantizada & Garantizada (ACK, retransmisión) \\
+\hline
+Orden & No garantizado & Garantizado (num. secuencia) \\
+\hline
+Control de flujo & Ausente & Ventana deslizante \\
+\hline
+Control de congestión & Ausente & \textit{Slow start}, AIMD \\
+\hline
+Cabecera & 8 bytes & 20--60 bytes \\
+\hline
+Unidad & Datagrama & Flujo de bytes \\
+\hline
+Uso típico & DNS, RTP, RPC, VoIP & HTTP, FTP, SMTP, SSH \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\subsection{Llamada a Procedimiento Remoto (RPC)}
+
+El modelo de \emph{Remote Procedure Call} (RPC) permite invocar procedimientos ejecutados en una máquina remota como si fueran llamadas locales, ocultando los detalles del transporte subyacente. Un cliente invoca una función; un \textit{stub} local serializa (\textit{marshalling}) los parámetros y los envía al servidor, típicamente sobre UDP dado el patrón de comunicación de solicitud--respuesta de corta duración. El servidor ejecuta el procedimiento y devuelve el resultado por el mismo mecanismo. Cuando UDP se emplea como transporte de RPC, es responsabilidad de la propia capa de RPC implementar mecanismos ligeros de reintento y detección de duplicados (mediante identificadores de transacción), ya que UDP no los provee.
+
+\subsection{Protocolo de Transporte en Tiempo Real (RTP)}
+
+El \emph{Real-time Transport Protocol} (RTP, RFC~3550) se ejecuta habitualmente sobre UDP y añade a los datagramas información necesaria para la reproducción de flujos de audio y video: número de secuencia (para detectar pérdidas y reordenar), marca de tiempo (\textit{timestamp}, para la sincronización de reproducción) y un identificador de la fuente. RTP no proporciona por sí mismo fiabilidad ni control de congestión; estas funciones se delegan al protocolo compañero \emph{RTCP} (\textit{RTP Control Protocol}), encargado de reportar estadísticas de calidad de servicio (pérdida de paquetes, \textit{jitter}) entre los participantes de la sesión. La combinación UDP+RTP resulta idónea para aplicaciones multimedia donde la puntualidad de entrega prevalece sobre la fiabilidad absoluta.
+
 \end{document}
