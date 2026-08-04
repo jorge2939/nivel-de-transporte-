@@ -48,6 +48,7 @@ La capa de transporte proporciona una \emph{comunicación lógica} entre proceso
     \item \textbf{Control de flujo}: regula la velocidad de envío para no saturar al receptor.
     \item \textbf{Control de errores y entrega fiable} (opcional, según el protocolo): garantiza integridad, orden y ausencia de duplicados mediante confirmaciones (ACK).
     \item \textbf{Control de congestión}: dirigido a la red, no a la aplicación, para evitar el colapso de los recursos compartidos.
+\end{itemize}
 
 Cabe destacar que no todos los protocolos de transporte ofrecen la totalidad de estos servicios; UDP, por ejemplo, renuncia deliberadamente a la fiabilidad y al control de flujo en favor de la simplicidad y la baja latencia \cite{fuoc}.
 
