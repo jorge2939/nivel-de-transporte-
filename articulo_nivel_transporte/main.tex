@@ -34,4 +34,60 @@ La capa de transporte constituye el eslabón que permite la comunicación lógic
 capa de transporte, TCP, UDP, sockets, control de congestión, control de flujo, desempeño de redes, TPDU, RPC, RTP
 \end{IEEEkeywords}
 
+\section{Introducción y servicios de transporte}
+
+La capa de transporte es la cuarta capa del modelo de referencia OSI y la primera orientada a la aplicación cuya comunicación con su entidad par es estrictamente extremo a extremo \cite{tanenbaum}. A diferencia de las capas inferiores, que intercambian unidades de datos punto a punto con el siguiente elemento de la red, el protocolo de transporte se ejecuta únicamente en los sistemas finales (\textit{hosts}), nunca en los encaminadores intermedios \cite{kurose}. En la pila TCP/IP, que es la que rige de facto en Internet, esta capa concentra las funciones que en el modelo OSI de siete niveles se reparten entre las capas de transporte y sesión, y define dos protocolos principales —UDP y TCP— con modelos de servicio radicalmente distintos entre sí, además de alternativas más recientes como SCTP y DCCP, orientadas a escenarios híbridos que requieren, por ejemplo, entrega de mensajes fuera de orden con control de flujo, o control de congestión sin garantía de entrega \cite{fuoc}. La elección del protocolo adecuado no es un detalle de implementación menor: condiciona directamente la latencia percibida, la resiliencia ante pérdidas y la escalabilidad del sistema distribuido que se construye sobre ella.
+
+\subsection{Servicios ofrecidos}
+
+La capa de transporte proporciona una \emph{comunicación lógica} entre procesos de aplicación ejecutándose en máquinas distintas: desde la perspectiva de la aplicación, ambos extremos parecen conectados directamente, aunque en realidad la comunicación atraviesa múltiples encaminadores y enlaces heterogéneos \cite{fuoc}. Entre los servicios característicos se destacan:
+
+\begin{itemize}
+    \item \textbf{Segmentación y reensamblaje}: los mensajes de aplicación se fragmentan en segmentos (TPDU o PDU-4) antes de pasarlos a la capa de red, y se reconstruyen en el receptor.
+    \item \textbf{Multiplexación/demultiplexación}: permite que múltiples procesos comparen una única conexión de red, mediante el uso de \textit{sockets} identificados por puertos.
+    \item \textbf{Control de flujo}: regula la velocidad de envío para no saturar al receptor.
+    \item \textbf{Control de errores y entrega fiable} (opcional, según el protocolo): garantiza integridad, orden y ausencia de duplicados mediante confirmaciones (ACK).
+    \item \textbf{Control de congestión}: dirigido a la red, no a la aplicación, para evitar el colapso de los recursos compartidos.
+
+Cabe destacar que no todos los protocolos de transporte ofrecen la totalidad de estos servicios; UDP, por ejemplo, renuncia deliberadamente a la fiabilidad y al control de flujo en favor de la simplicidad y la baja latencia \cite{fuoc}.
+
+\subsection{Control de la conexión y primitivas de transporte}
+
+Los protocolos orientados a conexión atraviesan tres fases: \emph{establecimiento}, \emph{transferencia de datos} y \emph{liberación}. Las \textit{primitivas del servicio de transporte} (por ejemplo, \texttt{CONNECT}, \texttt{SEND}, \texttt{RECEIVE}, \texttt{DISCONNECT}) constituyen la interfaz que exponen los protocolos hacia las capas superiores, permitiendo a la aplicación invocar estas fases sin conocer los detalles del protocolo subyacente.
+
+Para el direccionamiento, cada extremo necesita un identificador único, llamado \textit{TSAP} en OSI, que en Internet se conoce como el número de puerto. Un \textit{socket} queda definido por (IP, puerto), y en TCP por la 4-tupla (IP origen, puerto origen, IP destino, puerto destino), lo que permite demultiplexar segmentos hacia distintos procesos incluso cuando comparten el mismo puerto destino \cite{kurose}.
+
+\subsection{Sockets de Berkeley}
+
+La interfaz de \textit{sockets} de Berkeley constituye la implementación práctica de estas primitivas en sistemas Unix y compatibles. Un socket es un punto terminal de comunicación identificado por una dirección IP y un puerto; las operaciones principales son \texttt{socket()}, \texttt{bind()}, \texttt{listen()}, \texttt{accept()}, \texttt{connect()}, \texttt{send()}/\texttt{write()} y \texttt{recv()}/\texttt{read()}. Existen sockets de tipo \texttt{SOCK\_STREAM} (orientados a conexión, sobre TCP) y \texttt{SOCK\_DGRAM} (no orientados a conexión, sobre UDP), cada uno adecuado a distintas necesidades de fiabilidad y latencia.\\
+
+\begin{table}[htbp]
+\caption{Principales campos de la cabecera TCP (RFC 793)}
+\label{tab:tcpheader}
+\centering
+\begin{tabular}{|p{2.3cm}|p{4.7cm}|}
+\hline
+\textbf{Campo} & \textbf{Función} \\
+\hline
+Puerto origen/destino & Identifican los procesos de aplicación (demultiplexación) \\
+\hline
+Núm. de secuencia & Posición, en bytes, del primer byte del segmento \\
+\hline
+Núm. de reconocimiento & Próximo byte esperado por el receptor (ACK) \\
+\hline
+Indicadores (SYN, ACK, FIN, RST, PSH, URG) & Controlan el ciclo de vida y semántica del segmento \\
+\hline
+Ventana anunciada & Espacio disponible en el \textit{buffer} de recepción \\
+\hline
+Suma de comprobación & Detección de errores (obligatoria, a diferencia de UDP) \\
+\hline
+Opciones (MSS, \textit{window scale}, SACK, \textit{timestamp}) & Negociación de parámetros de rendimiento \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Elementos clave de los protocolos de transporte}
+
+Independientemente del protocolo concreto, los elementos comunes de diseño incluyen: direccionamiento, establecimiento y liberación de la conexión, control de flujo mediante memorias intermedias (\textit{buffers}) dinámicas, y multiplexación/demultiplexación. El establecimiento de una conexión es particularmente delicado en redes donde los paquetes pueden perderse, duplicarse o retrasarse; la solución adoptada por TCP es el acuerdo en tres vías (\textit{three-way handshake}), que evita que segmentos duplicados de conexiones antiguas sean interpretados erróneamente como pertenecientes a una nueva conexión \cite{tanenbaum}.
+
 \end{document}
