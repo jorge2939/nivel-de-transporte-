@@ -143,4 +143,59 @@ El modelo de \emph{Remote Procedure Call} (RPC) permite invocar procedimientos e
 
 El \emph{Real-time Transport Protocol} (RTP, RFC~3550) se ejecuta habitualmente sobre UDP y añade a los datagramas información necesaria para la reproducción de flujos de audio y video: número de secuencia (para detectar pérdidas y reordenar), marca de tiempo (\textit{timestamp}, para la sincronización de reproducción) y un identificador de la fuente. RTP no proporciona por sí mismo fiabilidad ni control de congestión; estas funciones se delegan al protocolo compañero \emph{RTCP} (\textit{RTP Control Protocol}), encargado de reportar estadísticas de calidad de servicio (pérdida de paquetes, \textit{jitter}) entre los participantes de la sesión. La combinación UDP+RTP resulta idónea para aplicaciones multimedia donde la puntualidad de entrega prevalece sobre la fiabilidad absoluta.
 
+\section{Protocolos orientados a conexión: TCP}
+
+\subsection{Modelo de servicio y administración de temporizadores}
+
+El \emph{Transmission Control Protocol} (TCP) transforma el servicio no fiable de IP en un servicio de transporte fiable, ordenado y de flujo de bytes (no de mensajes) entre procesos \cite{kurose}. TCP es \textit{full-duplex}, punto a punto, y garantizxa que los datos entregados a la aplicación estén libres de errores, sin duplicados y en el mismo orden en que fueron enviados. Para lograrlo, cada segmento no confirmado activa un temporizador de retransmisión (RTO).
+
+El cálculo del RTO es crítico: si es demasiado corto se producen retransmisiones innecesairas; si es demasiado largo, se penaliza la respuesta ante pérdidas reales. La estimación clásica emplea un promedio exponencial ponderado del tiempo de ida y vuelta (RTT):
+\begin{equation}
+RTT_{new} = (1-\alpha)\cdot RTT_{old} + \alpha \cdot RTT_{now}, \quad \alpha = 0.125
+\end{equation}
+\begin{equation}
+DevRTT_{new} = (1-\beta)\cdot DevRTT_{old} + \beta \cdot |RTT_{now}-RTT_{old}|
+\end{equation}
+\begin{equation}
+Timeout = RTT + 4 \cdot DevRTT
+\end{equation}
+Esta formulación, propuesta por Jacobson, pondera la variabilidad del RTT (\textit{DevRTT}) para evitar que enlaces con fluctuaciones altas disparen retransmisiones espurias \cite{fuoc}. Adicionalmente, el algoritmo de Karn establece que, tras una retransmisión, el RTO se duplica exponencialmente y no se recalcula el RTT hasta confirmar un segmento no retransmitido, evitando ambigüedades sobre a qué transmisión corresponde el ACK recibido.
+
+\subsection{Fases de la conexión}
+
+\textbf{Establecimiento.} TCP emplea el acuerdo en tres vías: el cliente envía un segmento \texttt{SYN} con un número de secuencia inicial (ISN) elegido aleatoriamente; el servidor responde con \texttt{SYN+ACK}, confirmando el ISN del cliente y proponiendo el suyo; finalmente el cliente confirma con \texttt{ACK}. La Fig.~\ref{fig:handshake} ilustra este intercambio junto con los estados de la máquina de estados finitos de TCP relevantes (\texttt{SYN\_SENT}, \texttt{SYN\_RCVD}, \texttt{ESTABLISHED}).
+
+\begin{figure}[htbp]
+\centering
+\caption{Acuerdo en tres vías (\textit{three-way handshake}) para el establecimiento de una conexión TCP.}
+\label{fig:handshake}
+\end{figure}
+
+\textbf{Liberación.} La conexión se cierra mediante el intercambio de segmentos \texttt{FIN}/\texttt{ACK} en cada sentido (dado que TCP es \textit{full-duplex}, cada extremo cierra su mitad de forma independiente, admitiendo el llamado \textit{cierre parcial}). El extremo que inicia el cierre activo permanece en el estado \texttt{TIME\_WAIT} durante $2\times MSL$ (tiempo máximo de vida de un segmento, habitualmente dos minutos), con el fin de absorber posibles retransmisiones tardías del \texttt{FIN} final antes de liberar definitivamente los recursos de la conexión \cite{fuoc}. Este modelo de administración por máquina de estados finitos comprende once estados agrupados en las fases de apertura activa/pasiva, transferencia y cierre activo/pasivo.
+
+\subsection{Control de flujo}
+
+TCP implementa control de flujo mediante una ventana deslizante de tamaño variable: el receptor anuncia en cada segmento de confirmación el espacio disponible en su memoria intermedia de recpeción (\textit{advertised window}, \texttt{RcvWindow}), y el emisor se compromete a no tener más bytes sin confirmar que el mínimo entre esta ventana y su propia ventana de congestión:
+\begin{equation}
+\resizebox{0.9\linewidth}{!}{$LastByteSend - LastByteAcked \le \min\{CongWin, RcvWindow\}$}
+\end{equation}
+Cuando la ventana anunciada llega a cero, el emisor debe enviar periódicamente segmentos de sondeo de un byte para detectar cuándo el receptor libera espacio, evitando así un bloqueo indefinido (problema conocido como \textit{deadlock} de ventana cero).
+
+\subsection{Algoritmos de control de congestión}
+
+A diferencia del control de flujo (impuesto por el receptor), el control de congestión es autoimpuesto por el emisor mediante la variable \texttt{cwnd} (ventana de congestión), con el objetivo de no saturar los recursos comaprtidos de la red \cite{fuoc}.
+
+\textbf{Arranque lento (\textit{slow start}).} \texttt{cwnd} se inicializa en 1~MSS y se duplica aproximadamente cada RTT (crecimiento exponencial) hasta alcanzar el umbral \texttt{ssthresh} o hasta que se detecta una pérdida.
+
+\textbf{Evitación de congestión (\textit{congestion avoidance}).} Superado \texttt{ssthresh}, \texttt{cwnd} crece linealmente (aproximadamente 1~MSS por RTT), siguiendo el principio de \emph{incremento aditivo, decremento multiplicativo} (AIMD): ante una pérdida, \texttt{ssthresh} se ajusta a la mitad de la ventana vigente y \texttt{cwnd} retrocede en consecuencia.
+
+\textbf{Retransmisión y recuperación rápidas.} Ante la recepción de tres ACK duplicados, TCP infiere pérdida sin esperar el vencimiento del temporizador (\textit{fast retransmit}), retransmite inmediatamente el segmento y entra en \textit{fast recovery}, evitando retornar a \textit{slow start} y preservando mayor aprovechamiento del enlace. La Fig.~\ref{fig:congestion} resume la evolución típica de \texttt{cwnd} a lo largo de estas fases.
+
+\begin{figure}[htbp]
+\centering
+\caption{Evolución de la ventana de congestión: arranque lento, evitación de congestión y recuperación tras una pérdida.}
+\label{fig:congestion}
+
+Las implementaciones históricas de TCP (Tahoe, Reno, y las variantes con \textit{SACK}) difieren principalmente en la sofisticación de estos mecanismos de recuperación ante pérdidas \cite{fuoc}.
+
 \end{document}
