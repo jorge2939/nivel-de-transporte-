@@ -201,4 +201,53 @@ A diferencia del control de flujo (impuesto por el receptor), el control de cong
 
 Las implementaciones históricas de TCP (Tahoe, Reno, y las variantes con \textit{SACK}) difieren principalmente en la sofisticación de estos mecanismos de recuperación ante pérdidas \cite{fuoc}.
 
+\section{Análisis de desempeño en redes de computadoras}
+
+\subsection{Problemas de desempeño y métricas}
+
+El desempeño de una red de transporte se evalúa habitualmente mediante tres métricas interrelacionadas:
+
+\begin{itemize}
+    \item \textbf{Rendimiento efectivo (\textit{throughput})}: cantidad de información útil transmitida por unidad de tiempo, siempre acotado por el ancho de banda del enlace más restrictivo.
+    \item \textbf{Latencia (RTT) y retardo de propagación}: determinan el tiempo mínimo necesario para confirmar cada unidad de datos y, por tanto, condicionan la eficiencia de los esquemas de ventana.
+    \item \textbf{Eficiencia del protocolo ($E$)}: relación entre el tiempo dedicado a transmitir información útil y el tiempo total invertido (incluyendo esperas de confirmación).
+\end{itemize}
+
+Un caso paradigmático es el protocolo \textit{stop\&wait}, cuya eficiencia depende del parámetro $a = t_{prop}/t_{trama}$: si $a\ll1$ (enlace corto o de baja velocidad frente al tamaño de la trama), $E\to100\%$; si $a\gg1$ (enlace largo o de muy alta velocidad, como los enlaces de fibra transoceánicos o satelitales), la eficiencia decae drásticamente, ya que el emisor permanece inactivo esperando la confirmación durante un tiempo mucho mayor al de transmisión \cite{fuoc}. Por ejemplo, en un enlace de 1~Gbps con RTT de 30~ms y tramas de 8000~bits, la eficiencia de \textit{stop\&wait} es de apenas el 0.03\%, evidenciando la necesidad de protocolos de ventana (Tabla~\ref{tab:eficiencia}). Los esquemas de \textit{Go-back-N} y retransmisión selectiva, al permitir múltiples segmentos en tránsito, elevan la eficiencia acercándola al 100\% cuando la probabilidad de error es baja, siendo la retransmisión selectiva superior cuando dicha probabilidad no es despreciable, pues evita retransmitir segmentos ya recibidos correctamente.
+
+\begin{table}[htbp]
+\caption{Eficiencia aproximada según el valor de $a=t_{prop}/t_{trama}$}
+\label{tab:eficiencia}
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{$a$} & \textbf{\textit{Stop\&wait}} & \textbf{Go-back-N} & \textbf{Rep. selectiva} \\
+\hline
+$\ll 1$ & $\approx 100\%$ & $\approx 100\%$ & $\approx 100\%$ \\
+\hline
+$= 1$ & $\approx 30\%$ & $\approx 60$--$90\%^{*}$ & $\approx 90$--$99\%^{*}$ \\
+\hline
+$\gg 1$ (satelital) & $< 5\%$ & Depende de $W$ & Depende de $W$ \\
+\hline
+\multicolumn{4}{l}{\footnotesize $^{*}$Con ventana $W$ dimensionada al producto $BW\times RTT$.}
+\end{tabular}
+\end{table}
+
+Otro factor determinante es el tamaño de la ventana de transmisión con respecto al producto ancho de banda--retardo ($BW\times RTT$): una ventana inferior a este producto infrautiliza el enlace, mientras que una ventana excesiva desperdicia memoria sin beneficio adicional una vez alcanzada la ventana óptima $W_{optima}$.
+
+\subsection{Diseño de sistemas orientados a mejorar el desempeño}
+
+Entre las estrategias de diseño para mejorar el desempeño destacan:
+
+\begin{itemize}
+    \item \textbf{Escalado de ventana}: la opción \textit{Window Scale} de TCP permite anunciar ventanas superiores a $2^{16}$ bytes, indispensable en enlaces de alto producto ancho de banda--retardo (redes de larga distancia y alta velocidad).
+    \item \textbf{Ajuste dinámico de \textit{buffers}}: en lugar de reservar memoria intermedia fija por conexión, los sistemas modernos dimensionan dinámicamente los \textit{buffers} de transmisión y recepción según el patrón de tráfico observado.
+    \item \textbf{Confirmaciones retardadas (\textit{delayed ACK}) y algoritmo de Nagle}: reducen el número de segmentos pequeños generados por aplicaciones interactivas (por ejemplo, sesiones \textit{telnet}), agrupando varios bytes o varias confirmaciones en un solo segmento, a costa de un ligero incremento de latencia.
+    \item \textbf{Confirmaciones selectivas (SACK)}: permiten al receptor indicar bloques no contiguos recibidos correctamente, de forma que el emisor retransmita únicamente los segmentos realmente perdidos.
+\end{itemize}
+
+\subsection{Procesamiento rápido de las TPDUs}
+
+El procesamiento eficiente de las unidades de datos del protocolo de transporte (TPDU) resulta crítico en servidores de alto volumen de conexiones. Entre las técnicas empleadas se encuentran: (i) el uso de tablas hash indexadas por la tupla de conexión para la demultiplexación en tiempo $O(1)$; (ii) la separación de la ruta rápida (\textit{fast path}) —segmentos en secuencia, sin opciones especiales, del tamaño esperado— de la ruta lenta que maneja casos excepcionales (segmentos fuera de orden, con opciones, fragmentados); (iii) minimización de copias de memoria entre las capas de aplicación, transporte y red mediante técnicas de \textit{zero-copy}; y (iv) descarga de cálculo del \textit{checksum} y de la segmentación (\textit{TCP Segmentation Offload}) al hardware de red, liberando ciclos de CPU del sistema final.
+
 \end{document}
