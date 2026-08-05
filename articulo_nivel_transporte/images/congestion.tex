@@ -1,0 +1,25 @@
+\documentclass[border=2pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}[>=Latex, font=\small]
+  \draw[->] (0,0) -- (9,0) node[right] {RTT};
+  \draw[->] (0,0) -- (0,5) node[above] {cwnd (MSS)};
+
+  % slow start (exponential)
+  \draw[thick, blue] (0,0.3) -- (1,0.6) -- (2,1.2) -- (3,2.4) -- (3.6,3.4);
+  % congestion avoidance (linear)
+  \draw[thick, blue] (3.6,3.4) -- (5,3.9) -- (6.4,4.4);
+  % loss event -> multiplicative decrease
+  \draw[thick, red, dashed] (6.4,4.4) -- (6.4,2.2);
+  \draw[thick, blue] (6.4,2.2) -- (7.4,2.6) -- (8.4,3.0);
+
+  \draw[dotted] (0,3.4) -- (3.6,3.4);
+  \node[left] at (0,3.4) {ssthresh};
+
+  \node[below] at (1.8,-0.3) {\footnotesize Slow start};
+  \node[below] at (5.0,-0.3) {\footnotesize Congestion avoidance};
+  \node[below] at (7.4,-0.3) {\footnotesize Recuperación};
+  \node[align=center, red] at (7.1,3.3) {\footnotesize pérdida\\[-2pt]\footnotesize detectada};
+\end{tikzpicture}
+\end{document}

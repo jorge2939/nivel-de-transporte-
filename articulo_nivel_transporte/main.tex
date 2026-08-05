@@ -167,6 +167,7 @@ Esta formulación, propuesta por Jacobson, pondera la variabilidad del RTT (\tex
 
 \begin{figure}[htbp]
 \centering
+\includegraphics[width=0.85\linewidth]{images/handshake.pdf}
 \caption{Acuerdo en tres vías (\textit{three-way handshake}) para el establecimiento de una conexión TCP.}
 \label{fig:handshake}
 \end{figure}
@@ -193,8 +194,10 @@ A diferencia del control de flujo (impuesto por el receptor), el control de cong
 
 \begin{figure}[htbp]
 \centering
+\includegraphics[width=\linewidth]{images/congestion.pdf}
 \caption{Evolución de la ventana de congestión: arranque lento, evitación de congestión y recuperación tras una pérdida.}
 \label{fig:congestion}
+\end{figure}
 
 Las implementaciones históricas de TCP (Tahoe, Reno, y las variantes con \textit{SACK}) difieren principalmente en la sofisticación de estos mecanismos de recuperación ante pérdidas \cite{fuoc}.
 
