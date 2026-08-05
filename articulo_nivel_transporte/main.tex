@@ -147,9 +147,9 @@ El \emph{Real-time Transport Protocol} (RTP, RFC~3550) se ejecuta habitualmente 
 
 \subsection{Modelo de servicio y administración de temporizadores}
 
-El \emph{Transmission Control Protocol} (TCP) transforma el servicio no fiable de IP en un servicio de transporte fiable, ordenado y de flujo de bytes (no de mensajes) entre procesos \cite{kurose}. TCP es \textit{full-duplex}, punto a punto, y garantizxa que los datos entregados a la aplicación estén libres de errores, sin duplicados y en el mismo orden en que fueron enviados. Para lograrlo, cada segmento no confirmado activa un temporizador de retransmisión (RTO).
+El \emph{Transmission Control Protocol} (TCP) transforma el servicio no fiable de IP en un servicio de transporte fiable, ordenado y de flujo de bytes (no de mensajes) entre procesos \cite{kurose}. TCP es \textit{full-duplex}, punto a punto, y garantiza que los datos entregados a la aplicación estén libres de errores, sin duplicados y en el mismo orden en que fueron enviados. Para lograrlo, cada segmento no confirmado activa un temporizador de retransmisión (RTO).
 
-El cálculo del RTO es crítico: si es demasiado corto se producen retransmisiones innecesairas; si es demasiado largo, se penaliza la respuesta ante pérdidas reales. La estimación clásica emplea un promedio exponencial ponderado del tiempo de ida y vuelta (RTT):
+El cálculo del RTO es crítico: si es demasiado corto se producen retransmisiones innecesarias; si es demasiado largo, se penaliza la respuesta ante pérdidas reales. La estimación clásica emplea un promedio exponencial ponderado del tiempo de ida y vuelta (RTT):
 \begin{equation}
 RTT_{new} = (1-\alpha)\cdot RTT_{old} + \alpha \cdot RTT_{now}, \quad \alpha = 0.125
 \end{equation}
@@ -176,7 +176,7 @@ Esta formulación, propuesta por Jacobson, pondera la variabilidad del RTT (\tex
 
 \subsection{Control de flujo}
 
-TCP implementa control de flujo mediante una ventana deslizante de tamaño variable: el receptor anuncia en cada segmento de confirmación el espacio disponible en su memoria intermedia de recpeción (\textit{advertised window}, \texttt{RcvWindow}), y el emisor se compromete a no tener más bytes sin confirmar que el mínimo entre esta ventana y su propia ventana de congestión:
+TCP implementa control de flujo mediante una ventana deslizante de tamaño variable: el receptor anuncia en cada segmento de confirmación el espacio disponible en su memoria intermedia de recepción (\textit{advertised window}, \texttt{RcvWindow}), y el emisor se compromete a no tener más bytes sin confirmar que el mínimo entre esta ventana y su propia ventana de congestión:
 \begin{equation}
 \resizebox{0.9\linewidth}{!}{$LastByteSend - LastByteAcked \le \min\{CongWin, RcvWindow\}$}
 \end{equation}
@@ -184,7 +184,7 @@ Cuando la ventana anunciada llega a cero, el emisor debe enviar periódicamente 
 
 \subsection{Algoritmos de control de congestión}
 
-A diferencia del control de flujo (impuesto por el receptor), el control de congestión es autoimpuesto por el emisor mediante la variable \texttt{cwnd} (ventana de congestión), con el objetivo de no saturar los recursos comaprtidos de la red \cite{fuoc}.
+A diferencia del control de flujo (impuesto por el receptor), el control de congestión es autoimpuesto por el emisor mediante la variable \texttt{cwnd} (ventana de congestión), con el objetivo de no saturar los recursos compartidos de la red \cite{fuoc}.
 
 \textbf{Arranque lento (\textit{slow start}).} \texttt{cwnd} se inicializa en 1~MSS y se duplica aproximadamente cada RTT (crecimiento exponencial) hasta alcanzar el umbral \texttt{ssthresh} o hasta que se detecta una pérdida.
 
@@ -252,7 +252,7 @@ El procesamiento eficiente de las unidades de datos del protocolo de transporte 
 
 \section{Conclusiones}
 
-El nivel de transporte resuelve un compromiso fundamental entre simplicidad/latencia y fiabilidad/control. UDP resulta idóneo cuando la aplicación tolera pérdidas y exige baja latencia y mínima sobrecarga (DNS, RPC de corta duración, flujos multimedia en tiempo real vía RTP), delegando en la propia aplicación cualquier mecanismo de recuperación necesario. TCP, por el contrario, es la elección natural cuando la integridad y el orden de la información son imprescindibels (transferencia de ficheros, correo electrónico, tráfico web), asumiendo a cambio la sobrecarga de gesitonar conexiones, temporizadores y control de congestión. El desempeño observado en la práctica depende en gran medida de parámetros del enlace (ancho de banda, retardo de propagación) y de la correcta selección de tamaños de ventana y estrategias de recuperación ante pérdidas; por ello, el diseño de sistemas de red de alot desempeño no puede limitarse a elegir el protocolo adecuado, sino que debe además ajustar sus parámetros —ventanas, temporizadores, política de confirmaciones— al contexto específico de despliegue.
+El nivel de transporte resuelve un compromiso fundamental entre simplicidad/latencia y fiabilidad/control. UDP resulta idóneo cuando la aplicación tolera pérdidas y exige baja latencia y mínima sobrecarga (DNS, RPC de corta duración, flujos multimedia en tiempo real vía RTP), delegando en la propia aplicación cualquier mecanismo de recuperación necesario. TCP, por el contrario, es la elección natural cuando la integridad y el orden de la información son imprescindibles (transferencia de ficheros, correo electrónico, tráfico web), asumiendo a cambio la sobrecarga de gestionar conexiones, temporizadores y control de congestión. El desempeño observado en la práctica depende en gran medida de parámetros del enlace (ancho de banda, retardo de propagación) y de la correcta selección de tamaños de ventana y estrategias de recuperación ante pérdidas; por ello, el diseño de sistemas de red de alto desempeño no puede limitarse a elegir el protocolo adecuado, sino que debe además ajustar sus parámetros —ventanas, temporizadores, política de confirmaciones— al contexto específico de despliegue.
 
 \begin{thebibliography}{00}
 
