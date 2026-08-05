@@ -250,4 +250,26 @@ Entre las estrategias de diseño para mejorar el desempeño destacan:
 
 El procesamiento eficiente de las unidades de datos del protocolo de transporte (TPDU) resulta crítico en servidores de alto volumen de conexiones. Entre las técnicas empleadas se encuentran: (i) el uso de tablas hash indexadas por la tupla de conexión para la demultiplexación en tiempo $O(1)$; (ii) la separación de la ruta rápida (\textit{fast path}) —segmentos en secuencia, sin opciones especiales, del tamaño esperado— de la ruta lenta que maneja casos excepcionales (segmentos fuera de orden, con opciones, fragmentados); (iii) minimización de copias de memoria entre las capas de aplicación, transporte y red mediante técnicas de \textit{zero-copy}; y (iv) descarga de cálculo del \textit{checksum} y de la segmentación (\textit{TCP Segmentation Offload}) al hardware de red, liberando ciclos de CPU del sistema final.
 
+\section{Conclusiones}
+
+El nivel de transporte resuelve un compromiso fundamental entre simplicidad/latencia y fiabilidad/control. UDP resulta idóneo cuando la aplicación tolera pérdidas y exige baja latencia y mínima sobrecarga (DNS, RPC de corta duración, flujos multimedia en tiempo real vía RTP), delegando en la propia aplicación cualquier mecanismo de recuperación necesario. TCP, por el contrario, es la elección natural cuando la integridad y el orden de la información son imprescindibels (transferencia de ficheros, correo electrónico, tráfico web), asumiendo a cambio la sobrecarga de gesitonar conexiones, temporizadores y control de congestión. El desempeño observado en la práctica depende en gran medida de parámetros del enlace (ancho de banda, retardo de propagación) y de la correcta selección de tamaños de ventana y estrategias de recuperación ante pérdidas; por ello, el diseño de sistemas de red de alot desempeño no puede limitarse a elegir el protocolo adecuado, sino que debe además ajustar sus parámetros —ventanas, temporizadores, política de confirmaciones— al contexto específico de despliegue.
+
+\begin{thebibliography}{00}
+
+\bibitem{tanenbaum} A. S. Tanenbaum y D. J. Wetherall, \emph{Redes de Computadoras}, 5.ª ed. Ciudad de México, México: Pearson Educación, 2012.
+
+\bibitem{kurose} J. F. Kurose y K. W. Ross, \emph{Computer Networking: A Top-Down Approach}, 6.ª ed. Boston, MA, USA: Pearson/Addison-Wesley, 2013.
+
+\bibitem{fuoc} X. Vilajosana Guillén, R. Serral i Gracià, E. Lara Ochoa y M. Font Rosselló, \emph{La capa de transporte de datos}, PID\_00171190. Barcelona, España: Fundació per a la Universitat Oberta de Catalunya (FUOC), 2011.
+
+\bibitem{rfc768} J. Postel, ``User Datagram Protocol,'' Internet Engineering Task Force, RFC 768, Aug. 1980.
+
+\bibitem{rfc793} J. Postel, ``Transmission Control Protocol,'' Internet Engineering Task Force, RFC 793, Sep. 1981.
+
+\bibitem{rfc3550} H. Schulzrinne, S. Casner, R. Frederick y V. Jacobson, ``RTP: A Transport Protocol for Real-Time Applications,'' Internet Engineering Task Force, RFC 3550, Jul. 2003.
+
+\bibitem{jacobson} V. Jacobson, ``Congestion Avoidance and Control,'' en \emph{Proc. ACM SIGCOMM}, Stanford, CA, USA, 1988, pp. 314--329.
+
+\end{thebibliography}
+
 \end{document}
